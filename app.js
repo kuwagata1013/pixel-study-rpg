@@ -328,15 +328,21 @@ function updateUI() {
     elCertCount.innerText = `x${gameState.certCount}`;
     
     // Buttons
-    if (gameState.isStudying) {
-        elBtnToggleStudy.innerText = 'Stop & Save';
-        elBtnToggleStudy.classList.remove('btn-primary');
-        elBtnToggleStudy.classList.add('btn-danger');
-    } else {
-        elBtnToggleStudy.innerText = 'Start Study';
-        elBtnToggleStudy.classList.remove('btn-danger');
-        elBtnToggleStudy.classList.add('btn-primary');
+    // Helper to update study button UI
+    function updateStudyButton(isStudying) {
+        if (isStudying) {
+            elBtnToggleStudy.innerText = 'Stop & Save';
+            elBtnToggleStudy.classList.remove('btn-primary');
+            elBtnToggleStudy.classList.add('btn-danger');
+        } else {
+            elBtnToggleStudy.innerText = 'Start Study';
+            elBtnToggleStudy.classList.remove('btn-danger');
+            elBtnToggleStudy.classList.add('btn-primary');
+        }
     }
+
+    // Update button based on current state
+    updateStudyButton(gameState.isStudying);
 }
 
 function startVisuals() {
