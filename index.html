@@ -3,87 +3,513 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pixel Study RPG</title>
+    <title>Pixel Study RPG // コマンドセンター</title>
+    <!-- Google Fonts for futuristic cyberpunk aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Google Identity Services client script -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-    <div id="game-container">
-        <!-- TOP UI -->
-        <header class="top-bar panel">
-            <div class="status-row">
-                <div class="survival-status">
-                    <span class="label">Time to Death</span>
-                    <div id="death-timer" class="neon-text">24:00:00</div>
-                </div>
-                
-                <div class="inventory">
-                    <img src="assets/cert.png" alt="Cert" class="cert-icon">
-                    <span id="cert-count">x0</span>
-                </div>
-            </div>
-            
-            <div class="weekly-progress">
-                <div class="label">Weekly Quest (14h)</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="weekly-fill"></div>
-                </div>
-                <div class="progress-text" id="weekly-text">0h 0m / 14h</div>
-            </div>
-
-            <div class="player-stats">
-                <div id="player-level" class="level-text">LV 1</div>
-                <div class="exp-bar">
-                    <div class="exp-fill" id="exp-fill"></div>
-                </div>
-                <div id="player-exp" class="exp-text">0 EXP</div>
-            </div>
-        </header>
-
-        <!-- CENTER DISPLAY -->
-        <main class="pixel-display">
-            <div class="background-layer" id="bg-layer"></div>
-            <div class="character-layer">
-                <img id="character-sprite" src="assets/character.png" alt="Character">
-            </div>
-            <div id="study-timer" class="hidden">00:00:00</div>
-            <div id="game-message" class="hidden"></div>
-        </main>
-
-        <!-- BOTTOM CONTROLS -->
-        <footer class="bottom-controls panel">
-            <div class="main-buttons">
-                <button id="btn-toggle-study" class="btn btn-primary">Start Study</button>
-            </div>
-            <div class="secondary-buttons">
-                <button id="btn-use-cert" class="btn btn-item">Use Item</button>
-                <button id="btn-show-stats" class="btn btn-info">Legacy</button>
-            </div>
-        </footer>
-    </div>
-    
-    <!-- MODALS -->
-    <div id="modal-records" class="modal hidden">
-        <div class="modal-content panel">
-            <h2>Legacy Records</h2>
-            <div class="records-container">
-                <ul id="records-list"></ul>
-            </div>
-            <button id="btn-close-records" class="btn">Close</button>
+    <!-- Mobile Header (visible only on small screens) -->
+    <header id="mobile-header" class="mobile-header">
+        <button id="btn-mobile-menu" class="mobile-menu-btn" aria-label="メニュー">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="mobile-profile-mini">
+            <span id="mobile-level" class="mobile-level">LV 1</span>
+            <span class="mobile-title">Pixel Study RPG</span>
         </div>
+        <div class="mobile-timer-mini">
+            <span id="mobile-death-timer" class="mobile-vital">24:00:00</span>
+        </div>
+    </header>
+
+    <!-- Mobile sidebar overlay -->
+    <div id="mobile-sidebar-overlay" class="mobile-sidebar-overlay hidden"></div>
+
+    <div id="game-container">
+        <!-- SIDEBAR (LEFT) -->
+        <aside class="sidebar">
+            <!-- Profile Section -->
+            <div class="profile-box">
+                <div class="avatar-container">
+                    <img id="player-avatar" src="assets/avatar.png" alt="Avatar" onerror="this.src='assets/character.png'">
+                </div>
+                <div class="profile-details">
+                    <div class="profile-header">
+                        <span id="player-level" class="level-text">LV 1</span>
+                        <div class="sync-group">
+                            <span class="sync-label">同期率:</span>
+                            <span id="sync-rate" class="sync-value">100%</span>
+                        </div>
+                    </div>
+                    <div class="class-title" id="class-title">学者ローグ</div>
+                    <div class="exp-container">
+                        <div class="exp-bar">
+                            <div class="exp-fill" id="exp-fill" style="width: 0%;"></div>
+                        </div>
+                        <div id="player-exp" class="exp-text">EXP: 0 / 100</div>
+                    </div>
+                    <!-- System Vital (Death Timer integration) -->
+                    <div class="vital-readout">
+                        <span class="vital-label">バイタル安定度</span>
+                        <span id="death-timer" class="vital-timer">24:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Command Menu -->
+            <nav class="nav-menu">
+                <div class="menu-label">システムコマンド</div>
+                <button class="nav-item active" data-tab="timer">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </span>
+                    <span class="nav-text">タイマー</span>
+                </button>
+                <button class="nav-item" data-tab="quests">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </span>
+                    <span class="nav-text">クエスト</span>
+                </button>
+                <button class="nav-item" data-tab="stats">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    </span>
+                    <span class="nav-text">ステータス</span>
+                </button>
+                <button class="nav-item" data-tab="friends">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    </span>
+                    <span class="nav-text">フレンド</span>
+                </button>
+                <button class="nav-item" data-tab="inventory">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><polygon points="12 22.08 12 12 3 6.92 3 17.08 12 22.08"></polygon><polygon points="12 22.08 12 12 21 6.92 21 17.08 12 22.08"></polygon><polygon points="12 12 3 6.92 12 1.84 21 6.92 12 12"></polygon></svg>
+                    </span>
+                    <span class="nav-text">インベントリ</span>
+                </button>
+                <button class="nav-item" data-tab="archive">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
+                    </span>
+                    <span class="nav-text">アーカイブ</span>
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <span class="nav-icon">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </span>
+                    <span class="nav-text">システム設定</span>
+                </button>
+            </nav>
+
+            <!-- Sidebar Footer Controls -->
+            <div class="sidebar-footer">
+                <button id="btn-toggle-study" class="btn-initiate">セッション開始</button>
+                <button id="btn-logout" class="btn-logout">
+                    <span class="logout-icon">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                    </span>
+                    <span class="logout-text">システムログアウト</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN DASHBOARD CONTENT (RIGHT) -->
+        <main class="main-content">
+            <!-- 1. TIMER VIEW (Active by default) -->
+            <div id="view-timer" class="dashboard-view">
+                <!-- Top Card: Rebuilt Wide RPG Timer Panel -->
+                <div class="panel focus-card">
+                    <!-- Background game layers (full width/height of the card) -->
+                    <div class="background-layer" id="bg-layer"></div>
+                    <div class="character-layer">
+                        <img id="character-sprite" src="assets/character.png" alt="Character">
+                    </div>
+                    <div class="scanlines"></div>
+                    <div class="crt-glow"></div>
+                    
+                    <!-- Floating HUD Timer Card (positioned absolute on top of the game layer) -->
+                    <div class="focus-timer-hud">
+                        <div class="decor-bracket tl"></div>
+                        <div class="decor-bracket br"></div>
+                        
+                        <div class="focus-status-row">
+                            <span id="focus-status-dot" class="status-dot"></span>
+                            <span id="focus-status-text" class="status-text">コアフォーカス：待機中</span>
+                        </div>
+                        <div id="study-timer" class="digital-clock">45:00</div>
+                        <div class="focus-meta-row">
+                            <div class="meta-item">
+                                <span class="meta-label">タスク名</span>
+                                <span id="task-identity" class="meta-value interactive-select">アルゴリズム学習.PRC</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">集中度</span>
+                                <span id="task-intensity" class="meta-value interactive-select highlighted">超集中</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry readout floating in the top right -->
+                    <div class="telemetry-overlay">
+                        <div id="telemetry-row-1">BPG: --- // CLK: 0.00Hz</div>
+                        <div id="telemetry-row-2">ニューラル状態: 待機中</div>
+                        <div style="margin-top:2px;">リンク: <span id="monitor-link-status">オフライン</span></div>
+                    </div>
+                </div>
+
+                <!-- Bottom panels row -->
+                <div class="command-center-header">コマンドセンター</div>
+                <div class="command-center-row">
+                    <!-- Bottom Left: Stats Cards -->
+                    <div class="stats-cards-group">
+                        <div class="panel stat-card temporal-streak">
+                            <div class="card-header">
+                                <span>継続ストリーク</span>
+                                <span class="card-icon fire-icon">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="large-num-label">
+                                    <span id="streak-count" class="large-number">0</span>
+                                    <span class="number-unit">サイクル</span>
+                                </div>
+                                <div class="streak-chart" id="streak-chart">
+                                    <!-- Dynamic bars loaded by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel stat-card total-uptime">
+                            <div class="card-header">
+                                <span>累計稼働時間</span>
+                                <span class="card-icon clock-icon">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 12"></polyline></svg>
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="large-num-label">
+                                    <span id="total-uptime-val" class="large-number">0h</span>
+                                    <span id="uptime-percentage" class="sub-rate-label">+0% 週目標達成率</span>
+                                </div>
+                                <div class="uptime-sparkline" id="uptime-sparkline">
+                                    <!-- Dynamic sparkline loaded by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel stat-card data-allocation">
+                            <div class="card-header">
+                                <span>集中データ配分</span>
+                                <span class="card-icon allocation-icon">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                                </span>
+                            </div>
+                            <div class="card-body allocation-list">
+                                <div class="allocation-row">
+                                    <div class="row-labels">
+                                        <span>超集中</span>
+                                        <span id="allocation-deep-percent">0%</span>
+                                    </div>
+                                    <div class="alloc-bar-bg">
+                                        <div id="alloc-bar-deep" class="alloc-bar-fill deep" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="allocation-row">
+                                    <div class="row-labels">
+                                        <span>システム分析</span>
+                                        <span id="allocation-analysis-percent">0%</span>
+                                    </div>
+                                    <div class="alloc-bar-bg">
+                                        <div id="alloc-bar-analysis" class="alloc-bar-fill analysis" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="allocation-row">
+                                    <div class="row-labels">
+                                        <span>システム保守</span>
+                                        <span id="allocation-maint-percent">0%</span>
+                                    </div>
+                                    <div class="alloc-bar-bg">
+                                        <div id="alloc-bar-maint" class="alloc-bar-fill maint" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Right: Archive Logs -->
+                    <div class="panel logs-card">
+                        <div class="logs-header">
+                            <span>履歴アーカイブ</span>
+                            <button id="btn-export-csv" class="btn-export">
+                                <span class="export-icon">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                </span>
+                                <span>ログ出力.CSV</span>
+                            </button>
+                        </div>
+                        <div class="logs-table-container">
+                            <table class="logs-table">
+                                <thead>
+                                    <tr>
+                                        <th>タイムライン</th>
+                                        <th>タスクID</th>
+                                        <th>獲得EXP</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="archive-logs-tbody">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. QUESTS VIEW (Hidden by default) -->
+            <div id="view-quests" class="dashboard-view hidden">
+                <div class="panel view-panel">
+                    <div class="decor-bracket tl"></div>
+                    <div class="decor-bracket br"></div>
+                    <h2 class="view-title">システム・クエストログ</h2>
+                    <div class="quests-container" id="quests-list-container">
+                        <!-- Quests items will go here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. FRIENDS VIEW (Hidden by default) -->
+            <div id="view-friends" class="dashboard-view hidden">
+                <div class="panel view-panel">
+                    <div class="decor-bracket tl"></div>
+                    <div class="decor-bracket br"></div>
+                    <h2 class="view-title">フレンド同期システム</h2>
+                    <div class="friends-layout">
+                        <!-- Left: Search and Pending requests -->
+                        <div class="friends-column">
+                            <div class="friends-sub-section">
+                                <h3>ユーザー検索</h3>
+                                <div class="friend-search-box">
+                                    <input type="text" id="friend-search-input" placeholder="名前かメールアドレスで検索...">
+                                    <button id="btn-friend-search" class="btn-action" style="padding: 10px; font-size: 11px;">検索</button>
+                                </div>
+                                <div id="search-results-container" class="search-results-list">
+                                    <!-- Search results will load dynamically -->
+                                </div>
+                            </div>
+                            
+                            <div class="friends-sub-section" style="margin-top: 24px;">
+                                <h3>受信したフレンド申請</h3>
+                                <div id="friend-requests-received" class="requests-list">
+                                    <!-- Received requests load here -->
+                                </div>
+                            </div>
+                            
+                            <div class="friends-sub-section" style="margin-top: 24px;">
+                                <h3>送信したフレンド申請</h3>
+                                <div id="friend-requests-sent" class="requests-list">
+                                    <!-- Sent requests load here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Active Friends leaderboard/status feed -->
+                        <div class="friends-column">
+                            <h3>同期中のフレンド (稼働状況)</h3>
+                            <div class="friends-list-container">
+                                <div id="friends-list" class="friends-list-feed">
+                                    <!-- Friends list loaded by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. STATS VIEW (Hidden by default) -->
+            <div id="view-stats" class="dashboard-view hidden">
+                <div class="panel view-panel">
+                    <div class="decor-bracket tl"></div>
+                    <div class="decor-bracket br"></div>
+                    <h2 class="view-title">自己診断データ分析</h2>
+                    <div class="stats-expanded-container" id="stats-expanded-container">
+                        <!-- Expanded stats layout -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. INVENTORY VIEW (Hidden by default) -->
+            <div id="view-inventory" class="dashboard-view hidden">
+                <div class="panel view-panel">
+                    <div class="decor-bracket tl"></div>
+                    <div class="decor-bracket br"></div>
+                    <h2 class="view-title">システム・インベントリ</h2>
+                    <div class="inventory-layout">
+                        <div class="inventory-grid" id="inventory-grid">
+                            <!-- 3x3 slots grid -->
+                        </div>
+                        <div class="inventory-sidebar panel" id="inventory-sidebar">
+                            <h3 id="item-title">アイテム未選択</h3>
+                            <div class="item-description-container">
+                                <p id="item-description">インベントリのスロットからアイテムを選択すると、ここに詳細が表示されます。</p>
+                            </div>
+                            <button id="btn-use-item" class="btn-action hidden">システム拡張を起動</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. ARCHIVE VIEW (Hidden by default) -->
+            <div id="view-archive" class="dashboard-view hidden">
+                <div class="panel view-panel">
+                    <div class="decor-bracket tl"></div>
+                    <div class="decor-bracket br"></div>
+                    <h2 class="view-title font-header">アーカイブ・ログ ＆ 過去の同期記録</h2>
+                    <div class="archive-layout">
+                        <div class="archive-column">
+                            <h3>集中履歴</h3>
+                            <div class="history-list-container">
+                                <table class="logs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>タイムライン</th>
+                                            <th>タスクID</th>
+                                            <th>獲得EXP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="full-history-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="archive-column">
+                            <h3>過去の同期再構成記録（転生履歴）</h3>
+                            <div class="legacy-records-container">
+                                <ul id="records-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. SETTINGS VIEW (Hidden by default) -->
+            <div id="view-settings" class="dashboard-view hidden">
+                <div class="panel view-panel">
+                    <div class="decor-bracket tl"></div>
+                    <div class="decor-bracket br"></div>
+                    <h2 class="view-title">システム・プロトコル設定</h2>
+                    <div class="settings-container">
+                        <div class="settings-row">
+                            <label for="settings-username">ユーザープロファイル名</label>
+                            <input type="text" id="settings-username" placeholder="学者ローグ">
+                        </div>
+                        <div class="settings-row">
+                            <label>デフォルトの集中セッション時間</label>
+                            <div class="duration-toggles">
+                                <button class="btn-duration" data-mins="15">15分</button>
+                                <button class="btn-duration" data-mins="25">25分</button>
+                                <button class="btn-duration active" data-mins="45">45分</button>
+                                <button class="btn-duration" data-mins="60">60分</button>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <label for="settings-sfx">ニューラル音声テレメトリー (効果音)</label>
+                            <div class="toggle-switch-wrapper">
+                                <input type="checkbox" id="settings-sfx" checked>
+                                <span class="toggle-label">ビープ音（効果音）を有効にする</span>
+                            </div>
+                        </div>
+                        <div class="settings-divider"></div>
+                        <div class="settings-danger-zone">
+                            <h3>危険領域プロトコル</h3>
+                            <div class="danger-buttons">
+                                <button id="btn-reincarnate" class="btn-danger-ui">自己崩壊シーケンス起動（強制転生）</button>
+                                <button id="btn-wipe" class="btn-danger-outline">コアメモリデータベースの完全消去</button>
+                                <button id="btn-signout" class="btn-action" style="margin-top: 10px; background: #c5a059; color: var(--bg-primary);">Googleアカウントからログアウト</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-    
+
+    <!-- MODALS -->
+    <!-- Game Over Modal -->
     <div id="modal-gameover" class="modal hidden">
         <div class="modal-content panel death-panel">
-            <h2 class="death-title">YOU DIED</h2>
-            <p id="death-reason" class="death-reason"></p>
+            <div class="decor-bracket tl"></div>
+            <div class="decor-bracket br"></div>
+            <h2 class="death-title font-header">システム同期崩壊</h2>
+            <div class="death-warning">バイタル生命抵抗力 枯渇</div>
+            <p id="death-reason" class="death-reason">24時間以内に学習フォーカスを開始できませんでした。「怠惰の悪魔」に精神を侵食されました。</p>
             <div class="death-stats">
-                <p>Final Level: <span id="final-level"></span></p>
-                <p>Survived: <span id="survival-days"></span> Days</p>
+                <p>最終到達レベル: <span id="final-level">1</span></p>
+                <p>生存期間: <span id="survival-days">0</span> サイクル</p>
             </div>
-            <button id="btn-restart" class="btn btn-danger">Reincarnate</button>
+            <button id="btn-restart" class="btn-initiate btn-reincarnate-action">次世代へのニューラル再構成（転生）</button>
         </div>
     </div>
+
+    <!-- AUTHENTICATION OVERLAY -->
+    <div id="auth-overlay" class="modal auth-overlay-screen">
+        <div class="modal-content panel auth-panel">
+            <div class="decor-bracket tl"></div>
+            <div class="decor-bracket br"></div>
+            <h2 class="auth-title font-header">NEURAL SYNC REQUIRED</h2>
+            <div class="auth-subtitle">学習データのオンライン同期 ＆ フレンド接続</div>
+            
+            <p class="auth-desc">Googleアカウントでログインすると、勉強時間・レベル・ストリークが自動的にデータベースへ保存され、他のユーザーと進捗を同期できるようになります。</p>
+            
+            <div class="auth-buttons">
+                <!-- Google Sign-in Render Container -->
+                <div id="google-login-btn"></div>
+                
+                <div class="auth-divider">または</div>
+                
+                <button id="btn-guest-mode" class="btn-danger-outline btn-guest">オフラインで続行 (ローカル保存)</button>
+            </div>
+            
+            <!-- Quick developer testing support (Mock Login) -->
+            <div class="dev-mock-login">
+                <input type="text" id="mock-username-input" placeholder="テスト用名前 (例: UserA)">
+                <button id="btn-mock-login">テストログイン (Google認証不要)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation (visible only on small screens) -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+        <button class="mobile-nav-btn active" data-tab="timer">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>タイマー</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="quests">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>クエスト</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="stats">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>ステータス</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="friends">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>フレンド</span>
+        </button>
+        <button class="mobile-nav-btn" data-tab="inventory">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><polygon points="12 22.08 12 12 3 6.92 3 17.08 12 22.08"></polygon><polygon points="12 22.08 12 12 21 6.92 21 17.08 12 22.08"></polygon><polygon points="12 12 3 6.92 12 1.84 21 6.92 12 12"></polygon></svg>
+            <span>アイテム</span>
+        </button>
+    </nav>
+
+    <!-- Floating System Alert Messages -->
+    <div id="game-message" class="system-message-overlay hidden"></div>
 
     <script src="app.js"></script>
 </body>
